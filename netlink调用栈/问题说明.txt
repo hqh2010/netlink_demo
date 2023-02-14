@@ -1,0 +1,10 @@
+问题背景
+1060安全项目通过 permission-manager设置网卡禁用后,使用sudo systemctl restart network-manager.service重启服务,发现禁用的网卡重新up了,网卡管控失效.
+
+分析过程:
+查看network-manager源码,发现network-manager通过sendmsg发送netlink消息到内核.由于network-manager的源码较多,写了一个简单的netlink_test.c demo来发送netlink消息来开关网卡.用法为:
+sudo ./netlink_test eth0 1
+sendto.c是通过sendto系统调用来发送netlink消息.
+
+分析结论:
+无论是netlink消息还是通过ioctl控件网卡,都要调用dev.c中的dev_change_flags函数,但是dev_change_flags函数中的勾子函数ifr_has_perm实现有问题,导致重启network-manager.service服务管控失效.
